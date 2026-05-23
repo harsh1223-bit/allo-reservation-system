@@ -64,4 +64,5 @@ enum ReservationStatus {
   PENDING
   CONFIRMED
   RELEASED
+  EXPIRED
 }
