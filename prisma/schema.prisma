@@ -65,4 +65,5 @@ enum ReservationStatus {
   CONFIRMED
   RELEASED
   EXPIRED
+  CANCELLED
 }
