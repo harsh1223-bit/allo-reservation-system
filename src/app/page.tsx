@@ -19,10 +19,13 @@ type Product = {
 };
 
 export default function HomePage() {
+  const router = useRouter();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const router = useRouter();
+  const [error, setError] = useState("");
+  const [creatingId, setCreatingId] =
+    useState<string | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -32,21 +35,34 @@ export default function HomePage() {
     try {
       const res = await fetch("/api/products");
 
+      if (!res.ok) {
+        throw new Error(
+          "Failed to fetch products"
+        );
+      }
+
       const data = await res.json();
 
       setProducts(data);
     } catch (error) {
       console.error(error);
+
+      setError(
+        "Failed to load inventory"
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  const reserveInventory = async (
+  async function reserveInventory(
     productId: string,
     warehouseId: string
-  ) => {
+  ) {
     try {
+      setError("");
+      setCreatingId(warehouseId);
+
       const res = await fetch(
         "/api/reservations",
         {
@@ -66,19 +82,19 @@ export default function HomePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(
+        setError(
           data.error ||
             "Reservation failed"
         );
+
         return;
       }
 
-      console.log(data);
-
       if (!data?.id) {
-        alert(
+        setError(
           "Reservation ID missing"
         );
+
         return;
       }
 
@@ -88,9 +104,11 @@ export default function HomePage() {
     } catch (error) {
       console.error(error);
 
-      alert("Something went wrong");
+      setError("Something went wrong");
+    } finally {
+      setCreatingId(null);
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -123,6 +141,12 @@ export default function HomePage() {
             </span>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-8 rounded-2xl border border-red-500/30 bg-red-500/20 p-4 text-red-300">
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {products.map((product) => (
@@ -176,36 +200,34 @@ export default function HomePage() {
                       </div>
 
                       <div className="grid grid-cols-3 gap-4 mb-6">
-                        <div className="rounded-2xl bg-zinc-900 p-4">
-                          <p className="text-sm text-zinc-500">
+                        <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
+                          <p className="text-zinc-500 text-sm mb-3">
                             Total
                           </p>
 
-                          <h4 className="mt-2 text-3xl font-black">
-                            {
-                              warehouse.totalUnits
-                            }
+                          <h4 className="text-4xl font-black">
+                            {warehouse.totalUnits}
                           </h4>
                         </div>
 
-                        <div className="rounded-2xl bg-zinc-900 p-4">
-                          <p className="text-sm text-zinc-500">
+                        <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
+                          <p className="text-zinc-500 text-sm mb-3">
                             Reserved
                           </p>
 
-                          <h4 className="mt-2 text-3xl font-black">
+                          <h4 className="text-4xl font-black">
                             {
                               warehouse.reservedUnits
                             }
                           </h4>
                         </div>
 
-                        <div className="rounded-2xl bg-zinc-900 p-4">
-                          <p className="text-sm text-zinc-500">
+                        <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
+                          <p className="text-zinc-500 text-sm mb-3">
                             Available
                           </p>
 
-                          <h4 className="mt-2 text-3xl font-black text-green-400">
+                          <h4 className="text-4xl font-black text-emerald-400">
                             {
                               warehouse.availableUnits
                             }
@@ -215,8 +237,10 @@ export default function HomePage() {
 
                       <button
                         disabled={
-                          warehouse.availableUnits <=
-                          0
+                          warehouse.availableUnits ===
+                            0 ||
+                          creatingId ===
+                            warehouse.warehouseId
                         }
                         onClick={() =>
                           reserveInventory(
@@ -224,15 +248,20 @@ export default function HomePage() {
                             warehouse.warehouseId
                           )
                         }
-                        className={`w-full rounded-2xl py-4 text-xl font-bold text-white transition ${
-                          warehouse.availableUnits <=
-                          0
-                            ? "cursor-not-allowed bg-zinc-700 text-zinc-400"
-                            : "bg-gradient-to-r from-blue-500 to-fuchsia-500 hover:scale-[1.02]"
+                        className={`w-full rounded-3xl py-5 text-xl font-bold tracking-tight transition-all duration-300 ${
+                          warehouse.availableUnits ===
+                            0 ||
+                          creatingId ===
+                            warehouse.warehouseId
+                            ? "cursor-not-allowed bg-zinc-800 text-zinc-500"
+                            : "bg-gradient-to-r from-blue-500 via-indigo-500 to-fuchsia-600 hover:scale-[1.02] hover:shadow-2xl hover:shadow-fuchsia-500/25"
                         }`}
                       >
-                        {warehouse.availableUnits <=
-                        0
+                        {creatingId ===
+                        warehouse.warehouseId
+                          ? "Creating Reservation..."
+                          : warehouse.availableUnits ===
+                            0
                           ? "Out of Stock"
                           : "Reserve Inventory"}
                       </button>
