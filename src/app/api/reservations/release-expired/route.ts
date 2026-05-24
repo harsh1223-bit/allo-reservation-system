@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function POST() {
-  try {
-    const expiredReservations = await prisma.reservation.findMany({
+async function releaseExpiredReservations() {
+  const expiredReservations =
+    await prisma.reservation.findMany({
       where: {
         status: "PENDING",
         expiresAt: {
@@ -12,43 +12,82 @@ export async function POST() {
       },
     });
 
+  for (const reservation of expiredReservations) {
     await prisma.$transaction(
-      expiredReservations.map((reservation) =>
-        prisma.inventory.update({
-          where: {
-            productId_warehouseId: {
-              productId: reservation.productId,
-              warehouseId: reservation.warehouseId,
+      async (tx) => {
+        const inventory =
+          await tx.inventory.findUnique({
+            where: {
+              productId_warehouseId: {
+                productId:
+                  reservation.productId,
+                warehouseId:
+                  reservation.warehouseId,
+              },
             },
+          });
+
+        if (!inventory) return;
+
+        await tx.inventory.update({
+          where: {
+            id: inventory.id,
           },
           data: {
-            reservedUnits: {
-              decrement: reservation.quantity,
-            },
+            reservedUnits: Math.max(
+              0,
+              inventory.reservedUnits -
+                reservation.quantity
+            ),
           },
-        })
-      )
+        });
+
+        await tx.reservation.update({
+          where: {
+            id: reservation.id,
+          },
+          data: {
+            status: "RELEASED",
+          },
+        });
+      }
     );
+  }
 
-    await prisma.reservation.updateMany({
-      where: {
-        id: {
-          in: expiredReservations.map((r) => r.id),
-        },
-      },
-      data: {
-        status: "EXPIRED" as any,
-      },
-    });
+  return NextResponse.json({
+    success: true,
+    released:
+      expiredReservations.length,
+  });
+}
 
-    return NextResponse.json({
-      releasedReservations: expiredReservations.length,
-    });
+export async function GET() {
+  try {
+    return await releaseExpiredReservations();
   } catch (error) {
     console.error(error);
 
     return NextResponse.json(
-      { error: "Failed to release reservations" },
+      {
+        error:
+          "Failed to release expired reservations",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST() {
+  try {
+    return await releaseExpiredReservations();
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        error:
+          "Failed to release expired reservations",
+      },
       { status: 500 }
     );
   }
