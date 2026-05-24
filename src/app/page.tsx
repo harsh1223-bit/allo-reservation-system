@@ -148,11 +148,11 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
           {products.map((product) => (
             <div
               key={product.id}
-              className="rounded-[32px] border border-white/10 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8"
+              className="h-fit rounded-[32px] border border-white/10 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8"
             >
               <div className="mb-8 flex items-start justify-between">
                 <div>
