@@ -111,13 +111,26 @@ export default function ReservationPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(
-          data.error ||
-            "Failed to complete payment"
-        );
+        if (res.status === 410) {
+          setError(
+            "Reservation expired. Inventory has been released."
+          );
 
-        return;
-      }
+          setReservation((prev: any) => ({
+            ...prev,
+            status: "RELEASED",
+          }));
+
+          return;
+        }
+
+  setError(
+    data.error ||
+      "Failed to complete payment"
+  );
+
+  return;
+}
 
       setReservation(data);
 
