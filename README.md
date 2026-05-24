@@ -1,230 +1,292 @@
 # 🚀 Allo Reservation System
 
-A production-style backend reservation system built using **Next.js**, **TypeScript**, **Prisma ORM**, **PostgreSQL**, and **Supabase**.
+<div align="center">
 
-This project simulates a real-world inventory reservation workflow with transaction-safe stock handling, warehouse inventory tracking, and reservation expiration management.
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge\&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge\&logo=typescript\&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge\&logo=prisma\&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge\&logo=supabase\&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge\&logo=postgresql\&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-38B2AC?style=for-the-badge\&logo=tailwind-css\&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge\&logo=vercel\&logoColor=white)
 
----
+### ⚡ Multi-Warehouse Inventory Reservation System
 
-# ✨ Features
+Production-style reservation flow with concurrency-safe inventory handling, reservation expiry, and real-time stock visibility.
 
-## 📦 Inventory Management
-- Manage products across multiple warehouses
-- Track:
-  - Total units
-  - Reserved units
-  - Available units
+</div>
 
----
+A production-style multi-warehouse inventory reservation system built with Next.js, Prisma, Supabase, and TypeScript.
 
-## 🏭 Warehouse Tracking
-- Multiple warehouses supported
-- Inventory distributed warehouse-wise
+Live Demo: [https://allo-reservation-system-five.vercel.app/](https://allo-reservation-system-five.vercel.app/)
 
----
-
-## 🔒 Reservation System
-- Create inventory reservations safely
-- Prevent overselling using database transactions
-- Reservation expiration support
+GitHub Repository: [https://github.com/harsh1223-bit/allo-reservation-system](https://github.com/harsh1223-bit/allo-reservation-system)
 
 ---
 
-## ⏳ Expiration Handling
-- Automatically release expired reservations
-- Restore stock back into available inventory
+# Overview
+
+This project simulates a real-world inventory reservation flow used in high-concurrency ecommerce systems.
+
+When a customer proceeds to checkout, inventory is temporarily reserved for a limited duration instead of being permanently deducted immediately. This prevents overselling during payment processing while also avoiding inventory lockups caused by abandoned carts.
+
+The system supports:
+
+* Multi-warehouse inventory
+* Inventory reservations
+* Reservation expiry handling
+* Reservation confirmation flow
+* Reservation cancellation/release flow
+* Quantity-based reservations
+* Concurrency-safe inventory updates
+* Live reservation countdowns
 
 ---
 
-## ⚡ Concurrency Safe
-Uses Prisma transactions to avoid:
-- Race conditions
-- Double booking
-- Overselling inventory
+# Tech Stack
+
+## Frontend
+
+* Next.js 16 (App Router)
+* React
+* TypeScript
+* Tailwind CSS
+
+## Backend
+
+* Next.js Route Handlers
+* Prisma ORM
+* Supabase PostgreSQL
+
+## Deployment
+
+* Vercel
+* Supabase
 
 ---
 
-# 🛠️ Tech Stack
+# Features
 
-| Technology | Purpose |
-|---|---|
-| :contentReference[oaicite:0]{index=0} | Backend API framework |
-| TypeScript | Type safety |
-| Prisma ORM | Database ORM |
-| PostgreSQL | Database |
-| :contentReference[oaicite:1]{index=1} | Hosted PostgreSQL |
-| REST APIs | API architecture |
+## Product Inventory Dashboard
+
+* Displays products across multiple warehouses
+* Shows:
+
+  * Total units
+  * Reserved units
+  * Available units
+* Quantity selector for reservations
+* Real-time UI updates
+
+## Reservation Flow
+
+Users can:
+
+* Reserve inventory
+* Select reservation quantity
+* Complete payment simulation
+* Cancel checkout
+* View reservation details
+* Track live reservation expiry countdown
+
+## Reservation Expiry Handling
+
+Pending reservations automatically expire after a fixed duration.
+
+Expired reservations:
+
+* Are marked as `RELEASED`
+* Restore reserved inventory back to available stock
 
 ---
 
-# 📁 Project Structure
+# Database Design
 
-```bash
-src/
- ├── app/
- │    └── api/
- │         ├── products/
- │         ├── warehouses/
- │         └── reservations/
- │
- ├── lib/
- │    └── prisma.ts
- │
-prisma/
- ├── schema.prisma
- └── seed.ts
+## Product
+
+Represents inventory items.
+
+## Warehouse
+
+Represents physical inventory locations.
+
+## Inventory
+
+Stores stock information per product per warehouse.
+
+Tracks:
+
+* totalUnits
+* reservedUnits
+
+Available inventory is calculated as:
+
+```txt
+availableUnits = totalUnits - reservedUnits
 ```
 
+## Reservation
+
+Tracks temporary inventory holds.
+
+Statuses:
+
+* PENDING
+* CONFIRMED
+* RELEASED
+
+Includes:
+
+* quantity
+* expiry time
+* warehouse reference
+* product reference
+
 ---
 
-# 📡 API Endpoints
+# API Endpoints
 
-## 📦 Get Products
+## GET /api/products
 
-```http
-GET /api/products
-```
-
-Returns:
-- products
-- warehouse inventory
-- available stock
+Returns products with warehouse inventory information.
 
 ---
 
-## 🏭 Get Warehouses
-
-```http
-GET /api/warehouses
-```
+## GET /api/warehouses
 
 Returns all warehouses.
 
 ---
 
-## 🛒 Create Reservation
+## POST /api/reservations
 
-```http
-POST /api/reservations
-```
+Creates an inventory reservation.
 
-### Request Body
+Returns:
 
-```json
-{
-  "productId": "PRODUCT_ID",
-  "warehouseId": "WAREHOUSE_ID",
-  "quantity": 1
-}
-```
-
-### Features
-- Validates stock
-- Prevents overselling
-- Uses Prisma transaction
+* `201` on success
+* `409` when stock is insufficient
 
 ---
 
-## ⏳ Release Expired Reservations
+## POST /api/reservations/:id/confirm
 
-```http
-POST /api/reservations/release-expired
+Confirms reservation after payment success simulation.
+
+Returns:
+
+* `200` on success
+* `410` if reservation already expired
+
+---
+
+## POST /api/reservations/:id/release
+
+Releases reservation early when payment fails or checkout is cancelled.
+
+---
+
+## POST /api/reservations/release-expired
+
+Automatically releases expired reservations.
+
+---
+
+# Concurrency Handling
+
+Concurrency correctness was the primary focus of this project.
+
+The reservation flow uses Prisma database transactions to ensure inventory consistency.
+
+When a reservation request is made:
+
+1. Inventory row is fetched
+2. Available units are calculated
+3. Reservation is rejected if stock is insufficient
+4. Reserved units are incremented atomically
+5. Reservation record is created inside the same transaction
+
+This guarantees that if two requests attempt to reserve the final available unit simultaneously, only one succeeds while the other receives a `409 Conflict` response.
+
+---
+
+# Reservation Expiry Strategy
+
+Reservations contain an `expiresAt` timestamp.
+
+Expired reservations are released through a dedicated API endpoint:
+
+```txt
+/api/reservations/release-expired
 ```
 
-### Features
-- Finds expired reservations
-- Releases reserved inventory
-- Marks reservations as EXPIRED
+The endpoint:
+
+* Finds expired pending reservations
+* Restores reserved inventory
+* Marks reservations as RELEASED
+
+In production, this endpoint can be triggered using:
+
+* Vercel Cron Jobs
+* Background workers
+* Scheduled serverless invocations
+
+For this implementation, the release mechanism is implemented and production-ready for scheduled execution.
 
 ---
 
-# 🧠 Database Design
+# UI/UX Features
 
-## Tables
-
-### Product
-Stores product information.
-
-### Warehouse
-Stores warehouse details.
-
-### Inventory
-Tracks stock availability per warehouse.
-
-### Reservation
-Tracks active and expired reservations.
+* Responsive inventory dashboard
+* Modern gradient-based UI
+* Quantity selectors
+* Loading states
+* Inline error handling
+* Expiry countdown timer
+* Reservation status indicators
+* Disabled states for invalid actions
 
 ---
 
-# 🔐 Concurrency Handling
+# Environment Variables
 
-Reservations are created inside database transactions:
+Create a `.env` file:
 
-```ts
-await prisma.$transaction(...)
-```
-
-This ensures:
-- atomic operations
-- consistency
-- no race conditions
-
----
-
-# ⚙️ Local Setup
-
-## 1️⃣ Clone Repository
-
-```bash
-git clone YOUR_GITHUB_REPO_URL
+```env
+DATABASE_URL="YOUR_SUPABASE_POOLED_URL"
+DIRECT_URL="YOUR_SUPABASE_DIRECT_URL"
 ```
 
 ---
 
-## 2️⃣ Install Dependencies
+# Local Development Setup
+
+## Install dependencies
 
 ```bash
 npm install
 ```
 
----
-
-## 3️⃣ Configure Environment Variables
-
-Create `.env`
-
-```env
-DATABASE_URL=your_database_url
-DIRECT_URL=your_direct_url
-```
-
----
-
-## 4️⃣ Push Prisma Schema
-
-```bash
-npx prisma db push
-```
-
----
-
-## 5️⃣ Generate Prisma Client
+## Generate Prisma client
 
 ```bash
 npx prisma generate
 ```
 
----
-
-## 6️⃣ Seed Database
+## Push database schema
 
 ```bash
-npm run seed
+npx prisma db push
 ```
 
----
+## Seed database
 
-## 7️⃣ Run Development Server
+```bash
+npx prisma db seed
+```
+
+## Start development server
 
 ```bash
 npm run dev
@@ -232,61 +294,70 @@ npm run dev
 
 ---
 
-# 🧪 Test APIs
+# Production Deployment
 
-Use:
-- Thunder Client
-- Postman
-- Browser
+## Frontend Hosting
 
----
+* Vercel
 
-# 📌 Example Workflow
+## Database Hosting
 
-## Create Reservation
-1. Fetch products
-2. Select warehouse
-3. Reserve quantity
+* Supabase PostgreSQL
 
----
+Deployment includes:
 
-## Expire Reservation
-1. Wait for expiration
-2. Call release endpoint
-3. Inventory restores automatically
+* Production environment variables
+* Prisma client generation during build
+* Hosted production database
 
 ---
 
-# 📈 Future Improvements
+# Tradeoffs & Design Decisions
 
-- Background cron jobs
-- Authentication
-- Admin dashboard
-- Reservation confirmation flow
-- WebSocket real-time inventory updates
-- Docker deployment
+## What Was Prioritized
+
+* Correct inventory reservation behavior
+* Concurrency safety
+* Clean reservation lifecycle
+* Simplicity and maintainability
+* Production-style UX
+
+## What Could Be Improved Further
+
+Given more time, the following improvements could be added:
+
+* Redis-based distributed locking
+* Idempotency-Key support
+* WebSocket live inventory updates
+* Authentication & user accounts
+* Reservation analytics dashboard
+* Automated Vercel Cron configuration
+* Inventory audit logs
+* Rate limiting
 
 ---
 
-# 👨‍💻 Author
+# Key Learning Outcomes
+
+This project focused heavily on:
+
+* Designing race-condition-safe reservation systems
+* Managing temporary inventory holds
+* Transactional consistency using Prisma
+* Full-stack Next.js architecture
+* Production deployment workflows
+
+---
+
+# Author
 
 Harsh Sharma
 
-Backend Developer | Java & TypeScript Enthusiast
+GitHub:
+[https://github.com/harsh1223-bit](https://github.com/harsh1223-bit)
 
 ---
 
-# ⭐ Project Highlights
+# Live Demo
 
-✅ Transaction-safe reservations  
-✅ Warehouse-level inventory tracking  
-✅ Prisma + PostgreSQL architecture  
-✅ Real-world backend design patterns  
-✅ Expiration and inventory recovery flow  
-✅ Production-style REST API structure  
-
----
-
-# 📜 License
-
-This project is for educational and assessment purposes.
+[https://allo-reservation-system-five.vercel.app/](https://allo-reservation-system-five.vercel.app/)
