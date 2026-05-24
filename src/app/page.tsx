@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -27,6 +28,10 @@ export default function HomePage() {
   const [creatingId, setCreatingId] =
     useState<string | null>(null);
 
+  const [quantities, setQuantities] = useState<
+    Record<string, number>
+  >({});
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -55,6 +60,41 @@ export default function HomePage() {
     }
   }
 
+  function increaseQuantity(
+    warehouseId: string,
+    availableUnits: number
+  ) {
+    setQuantities((prev) => {
+      const current =
+        prev[warehouseId] || 1;
+
+      return {
+        ...prev,
+        [warehouseId]: Math.min(
+          current + 1,
+          availableUnits
+        ),
+      };
+    });
+  }
+
+  function decreaseQuantity(
+    warehouseId: string
+  ) {
+    setQuantities((prev) => {
+      const current =
+        prev[warehouseId] || 1;
+
+      return {
+        ...prev,
+        [warehouseId]: Math.max(
+          current - 1,
+          1
+        ),
+      };
+    });
+  }
+
   async function reserveInventory(
     productId: string,
     warehouseId: string
@@ -62,6 +102,9 @@ export default function HomePage() {
     try {
       setError("");
       setCreatingId(warehouseId);
+
+      const quantity =
+        quantities[warehouseId] || 1;
 
       const res = await fetch(
         "/api/reservations",
@@ -74,7 +117,7 @@ export default function HomePage() {
           body: JSON.stringify({
             productId,
             warehouseId,
-            quantity: 1,
+            quantity,
           }),
         }
       );
@@ -152,7 +195,7 @@ export default function HomePage() {
           {products.map((product) => (
             <div
               key={product.id}
-              className="h-fit rounded-[32px] border border-white/10 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8"
+              className="min-h-[760px] rounded-[32px] border border-white/10 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8"
             >
               <div className="mb-8 flex items-start justify-between">
                 <div>
@@ -172,101 +215,141 @@ export default function HomePage() {
 
               <div className="space-y-6">
                 {product.warehouses.map(
-                  (warehouse) => (
-                    <div
-                      key={
+                  (warehouse) => {
+                    const quantity =
+                      quantities[
                         warehouse.warehouseId
-                      }
-                      className="rounded-3xl border border-white/10 bg-black/30 p-6"
-                    >
-                      <div className="mb-6 flex items-start justify-between">
-                        <div>
-                          <h3 className="text-2xl font-bold">
-                            {
-                              warehouse.warehouseName
-                            }
-                          </h3>
+                      ] || 1;
 
-                          <p className="mt-1 text-zinc-500">
-                            {
-                              warehouse.location
-                            }
-                          </p>
-                        </div>
-
-                        <div className="rounded-full bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-300">
-                          Warehouse
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4 mb-6">
-                        <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
-                          <p className="text-zinc-500 text-sm mb-3">
-                            Total
-                          </p>
-
-                          <h4 className="text-4xl font-black">
-                            {warehouse.totalUnits}
-                          </h4>
-                        </div>
-
-                        <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
-                          <p className="text-zinc-500 text-sm mb-3">
-                            Reserved
-                          </p>
-
-                          <h4 className="text-4xl font-black">
-                            {
-                              warehouse.reservedUnits
-                            }
-                          </h4>
-                        </div>
-
-                        <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
-                          <p className="text-zinc-500 text-sm mb-3">
-                            Available
-                          </p>
-
-                          <h4 className="text-4xl font-black text-emerald-400">
-                            {
-                              warehouse.availableUnits
-                            }
-                          </h4>
-                        </div>
-                      </div>
-
-                      <button
-                        disabled={
-                          warehouse.availableUnits ===
-                            0 ||
-                          creatingId ===
-                            warehouse.warehouseId
+                    return (
+                      <div
+                        key={
+                          warehouse.warehouseId
                         }
-                        onClick={() =>
-                          reserveInventory(
-                            product.id,
-                            warehouse.warehouseId
-                          )
-                        }
-                        className={`w-full rounded-3xl py-5 text-xl font-bold tracking-tight transition-all duration-300 ${
-                          warehouse.availableUnits ===
-                            0 ||
-                          creatingId ===
-                            warehouse.warehouseId
-                            ? "cursor-not-allowed bg-zinc-800 text-zinc-500"
-                            : "bg-gradient-to-r from-blue-500 via-indigo-500 to-fuchsia-600 hover:scale-[1.02] hover:shadow-2xl hover:shadow-fuchsia-500/25"
-                        }`}
+                        className="rounded-3xl border border-white/10 bg-black/30 p-6"
                       >
-                        {creatingId ===
-                        warehouse.warehouseId
-                          ? "Creating Reservation..."
-                          : warehouse.availableUnits ===
-                            0
-                          ? "Out of Stock"
-                          : "Reserve Inventory"}
-                      </button>
-                    </div>
-                  )
+                        <div className="mb-6 flex items-start justify-between">
+                          <div>
+                            <h3 className="text-2xl font-bold">
+                              {
+                                warehouse.warehouseName
+                              }
+                            </h3>
+
+                            <p className="mt-1 text-zinc-500">
+                              {
+                                warehouse.location
+                              }
+                            </p>
+                          </div>
+
+                          <div className="rounded-full bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-300">
+                            Warehouse
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 mb-6">
+                          <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
+                            <p className="text-zinc-500 text-sm mb-3">
+                              Total
+                            </p>
+
+                            <h4 className="text-4xl font-black">
+                              {warehouse.totalUnits}
+                            </h4>
+                          </div>
+
+                          <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
+                            <p className="text-zinc-500 text-sm mb-3">
+                              Reserved
+                            </p>
+
+                            <h4 className="text-4xl font-black">
+                              {
+                                warehouse.reservedUnits
+                              }
+                            </h4>
+                          </div>
+
+                          <div className="rounded-3xl bg-black/40 p-5 border border-white/5">
+                            <p className="text-zinc-500 text-sm mb-3">
+                              Available
+                            </p>
+
+                            <h4 className="text-4xl font-black text-emerald-400">
+                              {
+                                warehouse.availableUnits
+                              }
+                            </h4>
+                          </div>
+                        </div>
+
+                        <div className="mb-5 flex items-center justify-center gap-4">
+                          <button
+                            onClick={() =>
+                              decreaseQuantity(
+                                warehouse.warehouseId
+                              )
+                            }
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-2xl font-bold hover:bg-white/10 transition"
+                          >
+                            -
+                          </button>
+
+                          <div className="flex h-12 min-w-[90px] items-center justify-center rounded-2xl border border-white/10 bg-black/40 px-6 text-xl font-bold">
+                            {quantity}
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              increaseQuantity(
+                                warehouse.warehouseId,
+                                warehouse.availableUnits
+                              )
+                            }
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-2xl font-bold hover:bg-white/10 transition"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <button
+                          disabled={
+                            warehouse.availableUnits ===
+                              0 ||
+                            creatingId ===
+                              warehouse.warehouseId
+                          }
+                          onClick={() =>
+                            reserveInventory(
+                              product.id,
+                              warehouse.warehouseId
+                            )
+                          }
+                          className={`w-full rounded-3xl py-5 text-xl font-bold tracking-tight transition-all duration-300 ${
+                            warehouse.availableUnits ===
+                              0 ||
+                            creatingId ===
+                              warehouse.warehouseId
+                              ? "cursor-not-allowed bg-zinc-800 text-zinc-500"
+                              : "bg-gradient-to-r from-blue-500 via-indigo-500 to-fuchsia-600 hover:scale-[1.02] hover:shadow-2xl hover:shadow-fuchsia-500/25"
+                          }`}
+                        >
+                          {creatingId ===
+                          warehouse.warehouseId
+                            ? "Creating Reservation..."
+                            : warehouse.availableUnits ===
+                              0
+                            ? "Out of Stock"
+                            : `Reserve ${quantity} Item${
+                                quantity > 1
+                                  ? "s"
+                                  : ""
+                              }`}
+                        </button>
+                      </div>
+                    );
+                  }
                 )}
               </div>
             </div>
@@ -276,3 +359,4 @@ export default function HomePage() {
     </main>
   );
 }
+
