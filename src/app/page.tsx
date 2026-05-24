@@ -19,14 +19,19 @@ type Product = {
 };
 
 export default function HomePage() {
-  const router = useRouter();
-
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   async function fetchProducts() {
     try {
       const res = await fetch("/api/products");
+
       const data = await res.json();
 
       setProducts(data);
@@ -37,457 +42,199 @@ export default function HomePage() {
     }
   }
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const reserveInventory = async (
+    productId: string,
+    warehouseId: string
+  ) => {
+    try {
+      const res = await fetch(
+        "/api/reservations",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            productId,
+            warehouseId,
+            quantity: 1,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(
+          data.error ||
+            "Reservation failed"
+        );
+        return;
+      }
+
+      console.log(data);
+
+      if (!data?.id) {
+        alert(
+          "Reservation ID missing"
+        );
+        return;
+      }
+
+      router.push(
+        `/reservations/${data.id}`
+      );
+    } catch (error) {
+      console.error(error);
+
+      alert("Something went wrong");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center text-white text-3xl font-bold">
+        Loading...
+      </div>
+    );
+  }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top left,#172554,#020617,#000)",
-        color: "white",
-        padding: "40px",
-        overflow: "hidden",
-      }}
-    >
-      {/* Background Glow */}
-      <div
-        style={{
-          position: "fixed",
-          width: "500px",
-          height: "500px",
-          background:
-            "linear-gradient(135deg,#2563eb,#7c3aed)",
-          filter: "blur(140px)",
-          opacity: 0.25,
-          top: "-150px",
-          right: "-150px",
-          borderRadius: "999px",
-          zIndex: 0,
-        }}
-      />
+    <main className="min-h-screen bg-black text-white p-6 md:p-10">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-5xl md:text-7xl font-black">
+              Allo Inventory
+            </h1>
 
-      {/* Navbar */}
-      <nav
-        style={{
-          position: "relative",
-          zIndex: 10,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "60px",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: "54px",
-              fontWeight: 800,
-              margin: 0,
-              letterSpacing: "-2px",
-            }}
-          >
-            Allo
-          </h1>
-
-          <p
-            style={{
-              marginTop: "6px",
-              color: "#94a3b8",
-            }}
-          >
-            Reservation Intelligence Platform
-          </p>
-        </div>
-
-        <div
-          style={{
-            background:
-              "rgba(255,255,255,0.05)",
-            border:
-              "1px solid rgba(255,255,255,0.08)",
-            backdropFilter: "blur(14px)",
-            borderRadius: "18px",
-            padding: "14px 20px",
-          }}
-        >
-          <span
-            style={{
-              color: "#4ade80",
-              fontWeight: 600,
-            }}
-          >
-            ● System Online
-          </span>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section
-        style={{
-          position: "relative",
-          zIndex: 10,
-          marginBottom: "50px",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "78px",
-            lineHeight: 1,
-            maxWidth: "900px",
-            marginBottom: "24px",
-            fontWeight: 900,
-            letterSpacing: "-4px",
-          }}
-        >
-          Real-Time Inventory Reservations
-        </h2>
-
-        <p
-          style={{
-            fontSize: "22px",
-            color: "#94a3b8",
-            maxWidth: "700px",
-            lineHeight: 1.6,
-          }}
-        >
-          Intelligent warehouse inventory allocation
-          with reservation locking, expiration handling,
-          and live availability tracking.
-        </p>
-      </section>
-
-      {/* Stats */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fit,minmax(240px,1fr))",
-          gap: "24px",
-          marginBottom: "60px",
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        {[
-          {
-            title: "Products",
-            value: products.length,
-          },
-          {
-            title: "Warehouses",
-            value: products.reduce(
-              (acc, p) =>
-                acc + (p.warehouses?.length || 0),
-              0
-            ),
-          },
-          {
-            title: "Reservations",
-            value: "Live",
-          },
-        ].map((stat, index) => (
-          <div
-            key={index}
-            style={{
-              background:
-                "rgba(255,255,255,0.04)",
-              border:
-                "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "28px",
-              padding: "28px",
-              backdropFilter: "blur(18px)",
-            }}
-          >
-            <p
-              style={{
-                color: "#94a3b8",
-                marginBottom: "10px",
-              }}
-            >
-              {stat.title}
+            <p className="mt-3 text-zinc-400 text-lg">
+              Multi-warehouse inventory
+              reservation system
             </p>
-
-            <h2
-              style={{
-                fontSize: "42px",
-                margin: 0,
-              }}
-            >
-              {stat.value}
-            </h2>
           </div>
-        ))}
-      </div>
 
-      {/* Products */}
-      {loading ? (
-        <h2>Loading...</h2>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit,minmax(520px,1fr))",
-            gap: "32px",
-            position: "relative",
-            zIndex: 10,
-          }}
-        >
-          {products?.map((product) => (
+          <div className="hidden md:flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-3">
+            <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse" />
+
+            <span className="text-sm text-zinc-300">
+              Live Inventory
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {products.map((product) => (
             <div
               key={product.id}
-              style={{
-                background:
-                  "rgba(255,255,255,0.05)",
-                border:
-                  "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "34px",
-                padding: "32px",
-                backdropFilter: "blur(20px)",
-                boxShadow:
-                  "0 20px 50px rgba(0,0,0,0.35)",
-              }}
+              className="rounded-[32px] border border-white/10 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8"
             >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent:
-                    "space-between",
-                  alignItems: "center",
-                  marginBottom: "30px",
-                }}
-              >
-                <h2
-                  style={{
-                    fontSize: "48px",
-                    margin: 0,
-                    fontWeight: 800,
-                  }}
-                >
-                  {product.name}
-                </h2>
+              <div className="mb-8 flex items-start justify-between">
+                <div>
+                  <h2 className="text-4xl font-bold">
+                    {product.name}
+                  </h2>
 
-                <div
-                  style={{
-                    background:
-                      "linear-gradient(135deg,#2563eb,#7c3aed)",
-                    padding:
-                      "10px 16px",
-                    borderRadius: "999px",
-                    fontWeight: 600,
-                    fontSize: "14px",
-                  }}
-                >
-                  LIVE
+                  <p className="mt-2 text-zinc-500">
+                    Live warehouse inventory
+                  </p>
+                </div>
+
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-fuchsia-600 text-2xl">
+                  📦
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "22px",
-                }}
-              >
-                {product.warehouses?.map(
+              <div className="space-y-6">
+                {product.warehouses.map(
                   (warehouse) => (
                     <div
                       key={
                         warehouse.warehouseId
                       }
-                      style={{
-                        background:
-                          "rgba(255,255,255,0.03)",
-                        border:
-                          "1px solid rgba(255,255,255,0.05)",
-                        borderRadius: "24px",
-                        padding: "24px",
-                      }}
+                      className="rounded-3xl border border-white/10 bg-black/30 p-6"
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent:
-                            "space-between",
-                          alignItems:
-                            "center",
-                          marginBottom:
-                            "20px",
-                        }}
-                      >
+                      <div className="mb-6 flex items-start justify-between">
                         <div>
-                          <h3
-                            style={{
-                              fontSize:
-                                "28px",
-                              margin: 0,
-                            }}
-                          >
+                          <h3 className="text-2xl font-bold">
                             {
                               warehouse.warehouseName
                             }
                           </h3>
 
-                          <p
-                            style={{
-                              color:
-                                "#94a3b8",
-                            }}
-                          >
+                          <p className="mt-1 text-zinc-500">
                             {
                               warehouse.location
                             }
                           </p>
                         </div>
 
-                        <div
-                          style={{
-                            width: "14px",
-                            height: "14px",
-                            borderRadius:
-                              "999px",
-                            background:
-                              "#4ade80",
-                            boxShadow:
-                              "0 0 20px #4ade80",
-                          }}
-                        />
+                        <div className="rounded-full bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-300">
+                          Warehouse
+                        </div>
                       </div>
 
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(3,1fr)",
-                          gap: "16px",
-                        }}
-                      >
-                        {[
-                          {
-                            label: "Total",
-                            value:
-                              warehouse.totalUnits,
-                          },
-                          {
-                            label:
-                              "Reserved",
-                            value:
-                              warehouse.reservedUnits,
-                          },
-                          {
-                            label:
-                              "Available",
-                            value:
-                              warehouse.availableUnits,
-                          },
-                        ].map(
-                          (
-                            item,
-                            index
-                          ) => (
-                            <div
-                              key={index}
-                              style={{
-                                background:
-                                  "#020617",
-                                padding:
-                                  "18px",
-                                borderRadius:
-                                  "18px",
-                              }}
-                            >
-                              <p
-                                style={{
-                                  color:
-                                    "#94a3b8",
-                                  marginBottom:
-                                    "8px",
-                                }}
-                              >
-                                {
-                                  item.label
-                                }
-                              </p>
+                      <div className="grid grid-cols-3 gap-4 mb-6">
+                        <div className="rounded-2xl bg-zinc-900 p-4">
+                          <p className="text-sm text-zinc-500">
+                            Total
+                          </p>
 
-                              <h2
-                                style={{
-                                  margin: 0,
-                                  color:
-                                    item.label ===
-                                    "Available"
-                                      ? "#4ade80"
-                                      : "white",
-                                }}
-                              >
-                                {
-                                  item.value
-                                }
-                              </h2>
-                            </div>
-                          )
-                        )}
+                          <h4 className="mt-2 text-3xl font-black">
+                            {
+                              warehouse.totalUnits
+                            }
+                          </h4>
+                        </div>
+
+                        <div className="rounded-2xl bg-zinc-900 p-4">
+                          <p className="text-sm text-zinc-500">
+                            Reserved
+                          </p>
+
+                          <h4 className="mt-2 text-3xl font-black">
+                            {
+                              warehouse.reservedUnits
+                            }
+                          </h4>
+                        </div>
+
+                        <div className="rounded-2xl bg-zinc-900 p-4">
+                          <p className="text-sm text-zinc-500">
+                            Available
+                          </p>
+
+                          <h4 className="mt-2 text-3xl font-black text-green-400">
+                            {
+                              warehouse.availableUnits
+                            }
+                          </h4>
+                        </div>
                       </div>
 
                       <button
-                        onClick={async () => {
-                          const res =
-                            await fetch(
-                              "/api/reservations",
-                              {
-                                method:
-                                  "POST",
-                                headers:
-                                  {
-                                    "Content-Type":
-                                      "application/json",
-                                  },
-                                body: JSON.stringify(
-                                  {
-                                    productId:
-                                      product.id,
-                                    warehouseId:
-                                      warehouse.warehouseId,
-                                    quantity: 1,
-                                  }
-                                ),
-                              }
-                            );
-
-                          const data =
-                            await res.json();
-
-                          if (!res.ok) {
-                            alert(
-                              data.error
-                            );
-                            return;
-                          }
-
-                          router.push(
-                            `/reservation/${data.id}`
-                          );
-                        }}
-                        style={{
-                          width: "100%",
-                          marginTop: "24px",
-                          border: "none",
-                          borderRadius:
-                            "18px",
-                          padding:
-                            "18px",
-                          background:
-                            "linear-gradient(135deg,#2563eb,#7c3aed)",
-                          color: "white",
-                          fontWeight: 700,
-                          fontSize: "16px",
-                          boxShadow:
-                            "0 10px 30px rgba(99,102,241,0.35)",
-                        }}
+                        disabled={
+                          warehouse.availableUnits <=
+                          0
+                        }
+                        onClick={() =>
+                          reserveInventory(
+                            product.id,
+                            warehouse.warehouseId
+                          )
+                        }
+                        className={`w-full rounded-2xl py-4 text-xl font-bold text-white transition ${
+                          warehouse.availableUnits <=
+                          0
+                            ? "cursor-not-allowed bg-zinc-700 text-zinc-400"
+                            : "bg-gradient-to-r from-blue-500 to-fuchsia-500 hover:scale-[1.02]"
+                        }`}
                       >
-                        Reserve Inventory
+                        {warehouse.availableUnits <=
+                        0
+                          ? "Out of Stock"
+                          : "Reserve Inventory"}
                       </button>
                     </div>
                   )
@@ -496,7 +243,7 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-      )}
+      </div>
     </main>
   );
 }
