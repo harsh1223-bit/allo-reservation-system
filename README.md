@@ -14,6 +14,8 @@
 
 Production-style reservation flow with concurrency-safe inventory handling, reservation expiry, and real-time stock visibility.
 
+Built with a strong focus on transactional consistency, scalable reservation workflows, and production-oriented system design.
+
 </div>
 
 A production-style multi-warehouse inventory reservation system built with Next.js, Prisma, Supabase, and TypeScript.
